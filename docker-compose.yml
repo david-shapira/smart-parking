@@ -1,0 +1,46 @@
+services:
+  redis:
+    image: redis:7-alpine
+    # appendonly = AOF: every write is logged to a file in /data
+    # save 60 1  = also take an RDB snapshot every 60s if at least 1 key changed
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
+    volumes:
+      - redis-data:/data          # named volume -> data survives `docker compose down`
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build: ./api
+    environment:
+      REDIS_HOST: redis           # service name = hostname on the compose network
+      REDIS_PORT: "6379"
+      PARKING_CAPACITY: "50"
+    depends_on:
+      redis:
+        condition: service_healthy   # wait until redis answers PING
+    restart: unless-stopped
+
+  web:
+    build: ./web
+    ports:
+      - "8080:80"                 # the only port exposed to the host
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # IoT camera simulator - starts only with: docker compose --profile demo up
+  camera:
+    build: ./camera
+    profiles: ["demo"]
+    environment:
+      API_URL: http://api:5000/api
+      INTERVAL_SECONDS: "3"
+    depends_on:
+      - api
+
+volumes:
+  redis-data:

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Parking - לוח בקרה</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, Arial, sans-serif; margin: 0; background: #0f172a; color: #e2e8f0; }
+    header { padding: 20px 32px; background: #1e293b; display: flex; justify-content: space-between; align-items: center; }
+    h1 { margin: 0; font-size: 22px; }
+    #status { font-size: 14px; padding: 4px 12px; border-radius: 12px; }
+    .online  { background: #14532d; color: #86efac; }
+    .offline { background: #7f1d1d; color: #fca5a5; }
+    main { padding: 24px 32px; display: grid; gap: 24px; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+    .card { background: #1e293b; border-radius: 12px; padding: 18px; }
+    .card .label { color: #94a3b8; font-size: 14px; }
+    .card .value { font-size: 32px; font-weight: bold; margin-top: 6px; }
+    .bar { height: 8px; background: #334155; border-radius: 4px; margin-top: 10px; overflow: hidden; }
+    .bar div { height: 100%; background: #22c55e; transition: width .4s; }
+    .columns { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    @media (max-width: 800px) { .columns { grid-template-columns: 1fr; } }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; text-align: right; border-bottom: 1px solid #334155; }
+    th { color: #94a3b8; font-weight: normal; }
+    .plate { font-family: monospace; font-size: 16px; background: #facc15; color: #000; padding: 2px 8px; border-radius: 4px; }
+    button { background: #ef4444; color: white; border: 0; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { padding: 8px 0; border-bottom: 1px solid #334155; font-size: 14px; }
+    .entry { color: #86efac; } .exit { color: #fca5a5; }
+    .empty { color: #64748b; text-align: center; padding: 20px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🚗 Smart Parking Tracker</h1>
+    <span id="status" class="offline">מתחבר...</span>
+  </header>
+
+  <main>
+    <section class="stats">
+      <div class="card">
+        <div class="label">רכבים בחניון</div>
+        <div class="value" id="count" dir="ltr" style="text-align:right">-</div>
+        <div class="bar"><div id="fill" style="width:0%"></div></div>
+      </div>
+      <div class="card"><div class="label">מקומות פנויים</div><div class="value" id="free">-</div></div>
+      <div class="card"><div class="label">סה"כ כניסות</div><div class="value" id="total">-</div></div>
+    </section>
+
+    <section class="columns">
+      <div class="card">
+        <h2>רכבים בחניון כרגע</h2>
+        <table>
+          <thead><tr><th>מספר רישוי</th><th>שעת כניסה</th><th>זמן בחניון</th><th></th></tr></thead>
+          <tbody id="cars"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h2>אירועים אחרונים</h2>
+        <ul id="events"></ul>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API = "/api";          // same origin - Nginx proxies it to the API container
+    const REFRESH_MS = 2000;     // polling interval
+
+    // Small helper: create an element with text (textContent = safe, no HTML injection)
+    function el(tag, text, className) {
+      const e = document.createElement(tag);
+      if (text !== undefined) e.textContent = text;
+      if (className) e.className = className;
+      return e;
+    }
+
+    function formatTime(iso) {
+      return new Date(iso).toLocaleTimeString("he-IL");
+    }
+
+    function formatDuration(iso) {
+      const mins = Math.floor((Date.now() - new Date(iso)) / 60000);
+      if (mins < 60) return `${mins} דק'`;
+      return `${Math.floor(mins / 60)} שע' ${mins % 60} דק'`;
+    }
+
+    function setStatus(online) {
+      const s = document.getElementById("status");
+      s.textContent = online ? "מחובר" : "אין חיבור לשרת";
+      s.className = online ? "online" : "offline";
+    }
+
+    function renderStats(data) {
+      document.getElementById("count").textContent = `${data.count} / ${data.capacity}`;
+      document.getElementById("free").textContent = data.capacity - data.count;
+      document.getElementById("total").textContent = data.total_entries;
+      const pct = Math.round((data.count / data.capacity) * 100);
+      const fill = document.getElementById("fill");
+      fill.style.width = pct + "%";
+      fill.style.background = pct > 90 ? "#ef4444" : pct > 70 ? "#f59e0b" : "#22c55e";
+    }
+
+    function renderCars(cars) {
+      const tbody = document.getElementById("cars");
+      tbody.replaceChildren();   // clear old rows
+      if (cars.length === 0) {
+        const tr = el("tr");
+        const td = el("td", "החניון ריק", "empty");
+        td.colSpan = 4;
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+      for (const car of cars) {
+        const tr = el("tr");
+        const plateTd = el("td");
+        plateTd.appendChild(el("span", car.plate, "plate"));
+        tr.appendChild(plateTd);
+        tr.appendChild(el("td", formatTime(car.entered_at)));
+        tr.appendChild(el("td", formatDuration(car.entered_at)));
+        const btnTd = el("td");
+        const btn = el("button", "יציאה");
+        btn.onclick = () => exitCar(car.plate);
+        btnTd.appendChild(btn);
+        tr.appendChild(btnTd);
+        tbody.appendChild(tr);
+      }
+    }
+
+    function renderEvents(events) {
+      const ul = document.getElementById("events");
+      ul.replaceChildren();
+      if (events.length === 0) {
+        ul.appendChild(el("li", "אין אירועים עדיין", "empty"));
+        return;
+      }
+      for (const ev of events) {
+        const isEntry = ev.event === "entry";
+        const li = el("li", `${isEntry ? "⬅ כניסה" : "➡ יציאה"} | ${ev.plate} | ${formatTime(ev.time)}`,
+                      isEntry ? "entry" : "exit");
+        ul.appendChild(li);
+      }
+    }
+
+    async function refresh() {
+      try {
+        const res = await fetch(`${API}/cars`);
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        renderStats(data);
+        renderCars(data.cars);
+        renderEvents(data.recent_events);
+        setStatus(true);
+      } catch (err) {
+        console.error("refresh failed:", err);
+        setStatus(false);
+      }
+    }
+
+    async function exitCar(plate) {
+      await fetch(`${API}/cars/${encodeURIComponent(plate)}/exit`, { method: "POST" });
+      refresh();
+    }
+
+    refresh();
+    setInterval(refresh, REFRESH_MS);   // poll the API - no page reload needed
+  </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # 🚗 Smart Parking Tracker
 
-![CI/CD](../../actions/workflows/ci.yml/badge.svg)
+![CI/CD](https://github.com/david-shapira/smart-parking/actions/workflows/ci.yml/badge.svg)
 
 מערכת מיקרו-סרביסים לניהול כניסת רכבים לחניון חכם.
 מצלמת IoT מפענחת מספר רישוי ושולחת אותו ב-HTTP POST ל-API. לוח הבקרה של השומר מתשאל את ה-API כל 2 שניות ומעדכן את המסך בלי לרענן את העמוד.
@@ -113,5 +113,5 @@ curl localhost:8080/api/cars # 7777777 עדיין שם
 
 | שם | אחריות |
 |----|--------|
-| ... | ... |
-| ... | ... |
+| David | ContainersEngineer |
+| Jonathan Moshe Cohen Ambalu | HTML EXPERT |

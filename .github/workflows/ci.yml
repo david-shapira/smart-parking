@@ -1,0 +1,80 @@
+name: CI/CD
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # 1) Runs on every push: build all images, start the stack, smoke-test the API
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build all Docker images
+        run: docker compose --profile demo build
+
+      - name: Start the stack
+        run: docker compose up -d
+
+      - name: Wait for API to be healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/api/health; then exit 0; fi
+            sleep 2
+          done
+          echo "API did not become healthy" && exit 1
+
+      - name: Smoke test - POST a car and GET it back
+        run: |
+          curl -sf -X POST http://localhost:8080/api/cars \
+               -H "Content-Type: application/json" \
+               -d '{"plate":"12-345-67"}'
+          curl -sf http://localhost:8080/api/cars | grep -q "1234567"
+          # invalid plate must be rejected with 400
+          code=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8080/api/cars \
+                 -H "Content-Type: application/json" -d '{"plate":"abc"}')
+          test "$code" = "400"
+          # dashboard is served
+          curl -sf http://localhost:8080/ | grep -q "Smart Parking"
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  # 2) Bonus: push images to GitHub Container Registry (only on push to main)
+  publish:
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [api, web, camera]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lowercase owner name (GHCR requires lowercase)
+        run: echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+
+      - name: Build and push ${{ matrix.service }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/smart-parking-${{ matrix.service }}:latest
+            ghcr.io/${{ env.OWNER }}/smart-parking-${{ matrix.service }}:${{ github.sha }}

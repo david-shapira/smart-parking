@@ -3,169 +3,435 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Parking - לוח בקרה</title>
+  <meta name="theme-color" content="#174c3b">
+  <title>Smart Parking | גן הפוקימונים</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
+    :root {
+      color-scheme: light;
+      --ink: #19372c;
+      --muted: #688075;
+      --forest: #174c3b;
+      --leaf: #398454;
+      --lime: #d7ed74;
+      --sky: #b8e4df;
+      --paper: #f3f6eb;
+      --line: #dce5d8;
+      --white: #fffefa;
+      --coral: #e76d50;
+    }
     * { box-sizing: border-box; }
-    body { font-family: system-ui, Arial, sans-serif; margin: 0; background: #0f172a; color: #e2e8f0; }
-    header { padding: 20px 32px; background: #1e293b; display: flex; justify-content: space-between; align-items: center; }
-    h1 { margin: 0; font-size: 22px; }
-    #status { font-size: 14px; padding: 4px 12px; border-radius: 12px; }
-    .online  { background: #14532d; color: #86efac; }
-    .offline { background: #7f1d1d; color: #fca5a5; }
-    main { padding: 24px 32px; display: grid; gap: 24px; }
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
-    .card { background: #1e293b; border-radius: 12px; padding: 18px; }
-    .card .label { color: #94a3b8; font-size: 14px; }
-    .card .value { font-size: 32px; font-weight: bold; margin-top: 6px; }
-    .bar { height: 8px; background: #334155; border-radius: 4px; margin-top: 10px; overflow: hidden; }
-    .bar div { height: 100%; background: #22c55e; transition: width .4s; }
-    .columns { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
-    @media (max-width: 800px) { .columns { grid-template-columns: 1fr; } }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 10px; text-align: right; border-bottom: 1px solid #334155; }
-    th { color: #94a3b8; font-weight: normal; }
-    .plate { font-family: monospace; font-size: 16px; background: #facc15; color: #000; padding: 2px 8px; border-radius: 4px; }
-    button { background: #ef4444; color: white; border: 0; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
-    ul { list-style: none; padding: 0; margin: 0; }
-    li { padding: 8px 0; border-bottom: 1px solid #334155; font-size: 14px; }
-    .entry { color: #86efac; } .exit { color: #fca5a5; }
-    .empty { color: #64748b; text-align: center; padding: 20px; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: radial-gradient(#b8cdb5 0.7px, transparent 0.7px);
+      background-size: 19px 19px;
+      font-family: "Heebo", sans-serif;
+    }
+    button { font: inherit; }
+    .site-header {
+      min-height: 78px;
+      padding: 14px max(24px, calc((100vw - 1240px) / 2));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      background: var(--forest);
+      color: #f7ffe9;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #8bc18d;
+      border-radius: 14px 14px 14px 4px;
+      color: var(--forest);
+      background: var(--lime);
+      font-size: 22px;
+    }
+    .brand h1 { margin: 0; font-size: 19px; line-height: 1.15; }
+    .brand p { margin: 3px 0 0; color: #b8d5bf; font-size: 12px; }
+    #status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border: 1px solid #47745b;
+      border-radius: 999px;
+      color: #d5efcb;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    #status::before { width: 8px; height: 8px; border-radius: 50%; background: #d7ed74; content: ""; }
+    #status.offline { border-color: #a45b4e; color: #ffd1c7; }
+    #status.offline::before { background: #f58b70; }
+    main { width: min(1240px, calc(100% - 48px)); margin: 28px auto 56px; }
+    .hero {
+      position: relative;
+      min-height: 218px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 30px 42px;
+      border-radius: 8px 36px 8px 8px;
+      color: #f6ffe9;
+      background: linear-gradient(112deg, #174c3b 0%, #27714d 66%, #4c9256 100%);
+      isolation: isolate;
+    }
+    .hero::after {
+      position: absolute;
+      z-index: -1;
+      inset: 0;
+      background: repeating-linear-gradient(135deg, transparent 0 25px, rgb(255 255 255 / 4%) 25px 27px);
+      content: "";
+    }
+    .hero-copy { max-width: 600px; }
+    .eyebrow { margin: 0 0 8px; color: var(--lime); font-size: 13px; font-weight: 700; }
+    .hero h2 { margin: 0; font-size: clamp(30px, 5vw, 48px); line-height: 1.1; }
+    .hero-copy > p:last-child { margin: 12px 0 0; color: #d6e8d6; font-size: 15px; }
+    .hero-art {
+      width: 190px;
+      height: 190px;
+      flex: 0 0 auto;
+      object-fit: contain;
+      filter: drop-shadow(0 12px 10px rgb(13 44 31 / 27%));
+      animation: arrive 700ms ease-out both;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin: 22px 0 34px;
+      border-block: 1px solid #cfddcd;
+      background: rgb(255 254 250 / 75%);
+    }
+    .stat { min-width: 0; padding: 19px 24px; }
+    .stat + .stat { border-right: 1px solid var(--line); }
+    .stat-label { color: var(--muted); font-size: 13px; }
+    .stat-value { display: block; margin-top: 2px; font-size: 30px; font-weight: 800; line-height: 1.25; }
+    .stat-value small { color: #789080; font-size: 16px; font-weight: 500; }
+    .progress-track { height: 6px; margin-top: 11px; overflow: hidden; border-radius: 8px; background: #e0e9dc; }
+    .progress-fill { width: 0; height: 100%; border-radius: inherit; background: var(--leaf); transition: width 450ms ease, background 300ms ease; }
+    .garden-layout { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(260px, 0.8fr); gap: 38px; align-items: start; }
+    .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .section-heading h2 { margin: 0; font-size: 23px; line-height: 1.2; }
+    .section-heading p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .guest-count { color: var(--leaf); font: 500 13px "DM Mono", monospace; white-space: nowrap; }
+    .pokemon-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+    .pokemon-card {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 90px minmax(0, 1fr);
+      align-items: center;
+      gap: 13px;
+      padding: 13px;
+      border: 1px solid #dfe7d9;
+      border-radius: 8px;
+      background: var(--white);
+      animation: arrive 450ms ease-out both;
+    }
+    .pokemon-art {
+      width: 90px;
+      height: 94px;
+      object-fit: contain;
+      border-radius: 6px;
+      background: linear-gradient(145deg, #eaf3dd, #e4f2ee);
+    }
+    .pokemon-info { min-width: 0; }
+    .pokemon-name { margin: 0; overflow-wrap: anywhere; font-size: 18px; font-weight: 700; line-height: 1.2; }
+    .pokemon-species { margin: 2px 0 7px; color: var(--muted); font-size: 12px; }
+    .pokemon-meta { display: flex; flex-wrap: wrap; gap: 5px 10px; color: #527060; font-size: 12px; }
+    .pokemon-id { font-family: "DM Mono", monospace; }
+    .release-button {
+      min-height: 34px;
+      margin-top: 9px;
+      padding: 5px 10px;
+      border: 1px solid #efc7b9;
+      border-radius: 5px;
+      color: #a54b37;
+      background: #fff4ef;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: background 150ms ease, color 150ms ease;
+    }
+    .release-button:hover { color: white; background: var(--coral); }
+    .release-button:disabled { cursor: wait; opacity: 0.6; }
+    .events-panel { padding-right: 25px; border-right: 1px solid #cfddcd; }
+    .event-list { margin: 0; padding: 0; list-style: none; }
+    .event-item { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+    .event-mark { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: var(--forest); background: #dceec7; }
+    .event-item.exit .event-mark { color: #a54b37; background: #f9e3d9; }
+    .event-description { margin: 0; font-size: 13px; font-weight: 600; }
+    .event-time { margin: 2px 0 0; color: var(--muted); font: 11px "DM Mono", monospace; }
+    .empty-state { grid-column: 1 / -1; padding: 34px 16px; color: var(--muted); text-align: center; }
+    .empty-state p { margin: 7px 0 0; font-size: 13px; }
+    .garden-footer { margin-top: 38px; padding-top: 14px; border-top: 1px solid #cfddcd; color: #718477; font-size: 12px; }
+    @keyframes arrive { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 900px) {
+      .garden-layout { grid-template-columns: 1fr; gap: 30px; }
+      .events-panel { padding: 0; border: 0; }
+      .event-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; }
+    }
+    @media (max-width: 600px) {
+      .site-header { min-height: 68px; padding: 12px 18px; }
+      .brand-mark { width: 38px; height: 38px; }
+      .brand h1 { font-size: 17px; }
+      #status { padding: 6px 9px; font-size: 11px; }
+      main { width: calc(100% - 32px); margin: 18px auto 36px; }
+      .hero { min-height: 180px; padding: 25px 21px; border-radius: 6px 26px 6px 6px; }
+      .hero h2 { max-width: 250px; font-size: 32px; }
+      .hero-copy > p:last-child { max-width: 245px; font-size: 13px; }
+      .hero-art { position: absolute; left: -20px; bottom: -19px; width: 135px; height: 135px; opacity: 0.88; }
+      .stats { margin: 16px 0 27px; }
+      .stat { padding: 14px 10px; }
+      .stat-value { font-size: 23px; }
+      .stat-value small { font-size: 12px; }
+      .stat-label { font-size: 11px; }
+      .section-heading h2 { font-size: 21px; }
+      .pokemon-grid { grid-template-columns: 1fr; gap: 10px; }
+      .pokemon-card { grid-template-columns: 82px minmax(0, 1fr); padding: 10px; }
+      .pokemon-art { width: 82px; height: 84px; }
+      .event-list { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🚗 Smart Parking Tracker</h1>
-    <span id="status" class="offline">מתחבר...</span>
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">❧</span>
+      <div>
+        <h1>גן הפוקימונים</h1>
+        <p>יומן הגינה החיה</p>
+      </div>
+    </div>
+    <span id="status" class="offline" role="status" aria-live="polite">מתחבר...</span>
   </header>
 
   <main>
-    <section class="stats">
-      <div class="card">
-        <div class="label">רכבים בחניון</div>
-        <div class="value" id="count" dir="ltr" style="text-align:right">-</div>
-        <div class="bar"><div id="fill" style="width:0%"></div></div>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">יום חדש בגינה</p>
+        <h2 id="hero-title">גן הפוקימונים</h2>
+        <p>עלים רעננים, אורחים חדשים, והרפתקה בכל פינה.</p>
       </div>
-      <div class="card"><div class="label">מקומות פנויים</div><div class="value" id="free">-</div></div>
-      <div class="card"><div class="label">סה"כ כניסות</div><div class="value" id="total">-</div></div>
+      <img class="hero-art" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png" alt="" aria-hidden="true">
     </section>
 
-    <section class="columns">
-      <div class="card">
-        <h2>רכבים בחניון כרגע</h2>
-        <table>
-          <thead><tr><th>מספר רישוי</th><th>שעת כניסה</th><th>זמן בחניון</th><th></th></tr></thead>
-          <tbody id="cars"></tbody>
-        </table>
+    <section class="stats" aria-label="נתוני הגינה">
+      <div class="stat">
+        <span class="stat-label">פוקימונים בגינה</span>
+        <strong class="stat-value" id="count" dir="ltr">-</strong>
+        <div class="progress-track" role="progressbar" aria-label="תפוסת הגינה" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="progress-fill" id="fill"></div>
+        </div>
       </div>
-      <div class="card">
-        <h2>אירועים אחרונים</h2>
-        <ul id="events"></ul>
+      <div class="stat">
+        <span class="stat-label">פינות פנויות</span>
+        <strong class="stat-value" id="free">-</strong>
+      </div>
+      <div class="stat">
+        <span class="stat-label">ביקורים עד כה</span>
+        <strong class="stat-value" id="total">-</strong>
       </div>
     </section>
+
+    <div class="garden-layout">
+      <section aria-labelledby="visitors-title">
+        <div class="section-heading">
+          <div>
+            <h2 id="visitors-title">האורחים בגינה</h2>
+            <p>מי נהנה מהשמש עכשיו</p>
+          </div>
+          <span class="guest-count" id="guest-count">0 אורחים</span>
+        </div>
+        <div class="pokemon-grid" id="pokemon-grid" aria-live="polite"></div>
+      </section>
+
+      <aside class="events-panel" aria-labelledby="events-title">
+        <div class="section-heading">
+          <div>
+            <h2 id="events-title">שביל האירועים</h2>
+            <p>עקבות טריים מהגינה</p>
+          </div>
+        </div>
+        <ul class="event-list" id="events"></ul>
+      </aside>
+    </div>
+    <footer class="garden-footer">גן הפוקימונים <span aria-hidden="true">·</span> מתעדכן ברגעים קטנים</footer>
   </main>
 
   <script>
-    const API = "/api";          // same origin - Nginx proxies it to the API container
-    const REFRESH_MS = 2000;     // polling interval
+    const API = "/api";
+    const REFRESH_MS = 2000;
+    const POKEMON = [
+      { id: 1, name: "בולבזור", type: "עשב · רעל" },
+      { id: 43, name: "אודיש", type: "עשב · רעל" },
+      { id: 37, name: "וולפיקס", type: "אש" },
+      { id: 54, name: "פסיידאק", type: "מים" },
+      { id: 133, name: "איוי", type: "רגיל" },
+      { id: 152, name: "צ'יקוריטה", type: "עשב" },
+      { id: 187, name: "הופיפ", type: "עשב · מעופף" },
+      { id: 252, name: "טריקו", type: "עשב" },
+      { id: 258, name: "מודקיפ", type: "מים" },
+      { id: 387, name: "טורטוויג", type: "עשב" },
+      { id: 495, name: "סנייבי", type: "עשב" },
+      { id: 722, name: "רולט", type: "עשב · מעופף" },
+      { id: 906, name: "ספריגטיטו", type: "עשב" }
+    ];
 
-    // Small helper: create an element with text (textContent = safe, no HTML injection)
     function el(tag, text, className) {
-      const e = document.createElement(tag);
-      if (text !== undefined) e.textContent = text;
-      if (className) e.className = className;
-      return e;
+      const element = document.createElement(tag);
+      if (text !== undefined) element.textContent = text;
+      if (className) element.className = className;
+      return element;
+    }
+
+    function pokemonFor(identifier) {
+      let hash = 0;
+      for (const character of String(identifier)) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+      return POKEMON[hash % POKEMON.length];
+    }
+
+    function spriteUrl(id, fallback = false) {
+      const image = fallback ? `${id}.png` : `other/official-artwork/${id}.png`;
+      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${image}`;
+    }
+
+    function pokemonImage(pokemon, className) {
+      const image = document.createElement("img");
+      image.className = className;
+      image.src = spriteUrl(pokemon.id);
+      image.alt = `איור של ${pokemon.name}`;
+      image.loading = "lazy";
+      image.onerror = () => {
+        image.onerror = null;
+        image.src = spriteUrl(pokemon.id, true);
+      };
+      return image;
     }
 
     function formatTime(iso) {
-      return new Date(iso).toLocaleTimeString("he-IL");
+      return new Date(iso).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
     }
 
     function formatDuration(iso) {
-      const mins = Math.floor((Date.now() - new Date(iso)) / 60000);
-      if (mins < 60) return `${mins} דק'`;
-      return `${Math.floor(mins / 60)} שע' ${mins % 60} דק'`;
+      const minutes = Math.max(0, Math.floor((Date.now() - new Date(iso)) / 60000));
+      if (minutes < 60) return `${minutes} דק׳ בגינה`;
+      return `${Math.floor(minutes / 60)} שע׳ ${minutes % 60} דק׳`;
     }
 
     function setStatus(online) {
-      const s = document.getElementById("status");
-      s.textContent = online ? "מחובר" : "אין חיבור לשרת";
-      s.className = online ? "online" : "offline";
+      const status = document.getElementById("status");
+      status.textContent = online ? "הגינה מחוברת" : "אין קשר לגינה";
+      status.className = online ? "online" : "offline";
     }
 
     function renderStats(data) {
-      document.getElementById("count").textContent = `${data.count} / ${data.capacity}`;
-      document.getElementById("free").textContent = data.capacity - data.count;
+      const capacity = Number(data.capacity) || 0;
+      const count = Number(data.count) || 0;
+      const percentage = capacity ? Math.min(100, Math.round((count / capacity) * 100)) : 0;
+      const countValue = document.getElementById("count");
+      countValue.replaceChildren(document.createTextNode(String(count)));
+      countValue.appendChild(el("small", `/ ${capacity}`));
+      document.getElementById("free").textContent = Math.max(0, capacity - count);
       document.getElementById("total").textContent = data.total_entries;
-      const pct = Math.round((data.count / data.capacity) * 100);
       const fill = document.getElementById("fill");
-      fill.style.width = pct + "%";
-      fill.style.background = pct > 90 ? "#ef4444" : pct > 70 ? "#f59e0b" : "#22c55e";
+      fill.style.width = `${percentage}%`;
+      fill.style.background = percentage > 90 ? "#e76d50" : percentage > 70 ? "#d2a83c" : "#398454";
+      fill.parentElement.setAttribute("aria-valuenow", String(percentage));
     }
 
-    function renderCars(cars) {
-      const tbody = document.getElementById("cars");
-      tbody.replaceChildren();   // clear old rows
+    function renderPokemon(cars) {
+      const grid = document.getElementById("pokemon-grid");
+      grid.replaceChildren();
+      document.getElementById("guest-count").textContent = `${cars.length} אורחים`;
       if (cars.length === 0) {
-        const tr = el("tr");
-        const td = el("td", "החניון ריק", "empty");
-        td.colSpan = 4;
-        tr.appendChild(td);
-        tbody.appendChild(tr);
+        const empty = el("div", undefined, "empty-state");
+        empty.appendChild(el("div", "🌱", "empty-icon"));
+        empty.appendChild(el("p", "הגינה מחכה לאורחים הראשונים"));
+        grid.appendChild(empty);
         return;
       }
+
       for (const car of cars) {
-        const tr = el("tr");
-        const plateTd = el("td");
-        plateTd.appendChild(el("span", car.plate, "plate"));
-        tr.appendChild(plateTd);
-        tr.appendChild(el("td", formatTime(car.entered_at)));
-        tr.appendChild(el("td", formatDuration(car.entered_at)));
-        const btnTd = el("td");
-        const btn = el("button", "יציאה");
-        btn.onclick = () => exitCar(car.plate);
-        btnTd.appendChild(btn);
-        tr.appendChild(btnTd);
-        tbody.appendChild(tr);
+        const pokemon = pokemonFor(car.plate);
+        const card = el("article", undefined, "pokemon-card");
+        card.appendChild(pokemonImage(pokemon, "pokemon-art"));
+        const info = el("div", undefined, "pokemon-info");
+        info.appendChild(el("h3", pokemon.name, "pokemon-name"));
+        info.appendChild(el("p", pokemon.type, "pokemon-species"));
+        const meta = el("div", undefined, "pokemon-meta");
+        meta.appendChild(el("span", `מזהה ${car.plate}`, "pokemon-id"));
+        meta.appendChild(el("span", formatDuration(car.entered_at)));
+        info.appendChild(meta);
+        const release = el("button", "שחרור לגינה", "release-button");
+        release.type = "button";
+        release.setAttribute("aria-label", `שחרור ${pokemon.name} מהגינה`);
+        release.addEventListener("click", () => exitPokemon(car.plate, release));
+        info.appendChild(release);
+        card.appendChild(info);
+        grid.appendChild(card);
       }
     }
 
     function renderEvents(events) {
-      const ul = document.getElementById("events");
-      ul.replaceChildren();
+      const list = document.getElementById("events");
+      list.replaceChildren();
       if (events.length === 0) {
-        ul.appendChild(el("li", "אין אירועים עדיין", "empty"));
+        list.appendChild(el("li", "עוד אין עקבות בשביל", "empty-state"));
         return;
       }
-      for (const ev of events) {
-        const isEntry = ev.event === "entry";
-        const li = el("li", `${isEntry ? "⬅ כניסה" : "➡ יציאה"} | ${ev.plate} | ${formatTime(ev.time)}`,
-                      isEntry ? "entry" : "exit");
-        ul.appendChild(li);
+      for (const event of events) {
+        const entering = event.event === "entry";
+        const pokemon = pokemonFor(event.plate);
+        const item = el("li", undefined, `event-item ${entering ? "entry" : "exit"}`);
+        item.appendChild(el("span", entering ? "✿" : "↗", "event-mark"));
+        const details = el("div");
+        details.appendChild(el("p", `${pokemon.name} ${entering ? "הצטרף לגינה" : "יצא לטייל"}`, "event-description"));
+        details.appendChild(el("p", `${formatTime(event.time)} · ${event.plate}`, "event-time"));
+        item.appendChild(details);
+        list.appendChild(item);
       }
     }
 
     async function refresh() {
       try {
-        const res = await fetch(`${API}/cars`);
-        if (!res.ok) throw new Error(res.status);
-        const data = await res.json();
+        const response = await fetch(`${API}/cars`);
+        if (!response.ok) throw new Error(response.status);
+        const data = await response.json();
         renderStats(data);
-        renderCars(data.cars);
+        renderPokemon(data.cars);
         renderEvents(data.recent_events);
         setStatus(true);
-      } catch (err) {
-        console.error("refresh failed:", err);
+      } catch (error) {
+        console.error("garden refresh failed:", error);
         setStatus(false);
       }
     }
 
-    async function exitCar(plate) {
-      await fetch(`${API}/cars/${encodeURIComponent(plate)}/exit`, { method: "POST" });
-      refresh();
+    async function exitPokemon(identifier, button) {
+      button.disabled = true;
+      try {
+        const response = await fetch(`${API}/cars/${encodeURIComponent(identifier)}/exit`, { method: "POST" });
+        if (!response.ok) throw new Error(response.status);
+        await refresh();
+      } catch (error) {
+        console.error("could not release Pokemon:", error);
+        button.disabled = false;
+      }
     }
 
     refresh();
-    setInterval(refresh, REFRESH_MS);   // poll the API - no page reload needed
+    setInterval(refresh, REFRESH_MS);
   </script>
 </body>
 </html>
